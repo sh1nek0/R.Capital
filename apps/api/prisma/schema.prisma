@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  founder
+  analyst
+  admin
+}
+
+enum StartupStatus {
+  new
+  needs_review
+  reviewed
+  report_generated
+  report_sent
+  interview_requested
+  interview_scheduled
+  interview_done
+  paid_review_offered
+  paid_review_won
+  paid_review_lost
+  not_relevant
+}
+
+enum OpportunityType {
+  grant
+  accelerator
+  fund
+  angel_network
+  cvc
+  corporate_pilot
+  contest
+  oip_partner
+  bank
+  debt
+}
+
+enum ReportStatus {
+  draft
+  generated
+  sent
+  archived
+}
+
+enum ConsultationStatus {
+  requested
+  scheduled
+  done
+  won
+  lost
+}
+
+enum PaidStatus {
+  unpaid
+  invoice_sent
+  paid
+  refunded
+}
+
+model User {
+  id           String      @id @default(uuid())
+  name         String
+  email        String      @unique
+  telegram     String?
+  phone        String?
+  role         UserRole    @default(founder)
+  passwordHash String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  startups     Startup[]
+  consents     Consent[]
+  adminNotes   AdminNote[] @relation("AdminNotesByUser")
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Startup {
+  id                       String                  @id @default(uuid())
+  userId                   String
+  name                     String
+  description              String
+  website                  String?
+  industry                 String
+  clientType               String?
+  businessModel            String?
+  stage                    String
+  city                     String?
+  legalStatus              String?
+  revenueRange             String?
+  teamSize                 Int?
+  fundingNeedAmount        Decimal?
+  fundingNeedPurpose       String?
+  preferredFundingTypes    String[]
+  previousFundingAttempts  String?
+  mainPain                 String?
+  status                   StartupStatus           @default(new)
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  user                     User                    @relation(fields: [userId], references: [id])
+  questionnaireResponses   QuestionnaireResponse[]
+  scoreResults             ScoreResult[]
+  routeRecommendations     RouteRecommendation[]
+  reports                  Report[]
+  consultations            Consultation[]
+  adminNotes               AdminNote[]
+
+  @@index([status])
+  @@index([stage])
+  @@map("startups")
+}
+
+model QuestionnaireResponse {
+  id          String   @id @default(uuid())
+  startupId   String
+  questionKey String
+  answerValue Json
+  createdAt   DateTime @default(now())
+
+  startup     Startup  @relation(fields: [startupId], references: [id])
+
+  @@index([startupId])
+  @@map("questionnaire_responses")
+}
+
+model ScoreResult {
+  id                 String   @id @default(uuid())
+  startupId          String
+  grantScore         Int
+  acceleratorScore   Int
+  pilotScore         Int
+  angelScore         Int
+  vcScore            Int
+  cvcScore           Int
+  debtScore          Int
+  documentScore      Int
+  legalScore         Int
+  explanationJson    Json
+  createdAt          DateTime @default(now())
+
+  startup            Startup  @relation(fields: [startupId], references: [id])
+
+  @@index([startupId])
+  @@map("score_results")
+}
+
+model RouteRecommendation {
+  id                    String   @id @default(uuid())
+  startupId             String
+  primaryRoute           String
+  secondaryRoutes        String[]
+  notRecommendedRoutes   String[]
+  reasoning              Json
+  nextSteps              Json
+  createdAt              DateTime @default(now())
+
+  startup                Startup  @relation(fields: [startupId], references: [id])
+
+  @@index([startupId])
+  @@map("route_recommendations")
+}
+
+model Opportunity {
+  id              String          @id @default(uuid())
+  title           String
+  type            OpportunityType
+  organizer       String
+  industries      String[]
+  stages          String[]
+  geography       String[]
+  fundingMin      Decimal?
+  fundingMax      Decimal?
+  deadline        DateTime?
+  requirements    String?
+  applicationUrl  String?
+  status          String          @default("active")
+  lastCheckedAt   DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([type])
+  @@index([status])
+  @@map("opportunities")
+}
+
+model Report {
+  id             String       @id @default(uuid())
+  startupId      String
+  status         ReportStatus @default(draft)
+  reportHtml     String?
+  reportPdfUrl   String?
+  sentAt         DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  startup        Startup      @relation(fields: [startupId], references: [id])
+
+  @@index([startupId])
+  @@map("reports")
+}
+
+model Consultation {
+  id                String             @id @default(uuid())
+  startupId          String
+  type              String
+  status            ConsultationStatus @default(requested)
+  preferredContact  String?
+  paidStatus        PaidStatus         @default(unpaid)
+  price             Decimal?
+  notes             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  startup           Startup            @relation(fields: [startupId], references: [id])
+
+  @@index([startupId])
+  @@index([status])
+  @@map("consultations")
+}
+
+model AdminNote {
+  id          String   @id @default(uuid())
+  startupId   String
+  adminUserId String
+  note        String
+  createdAt   DateTime @default(now())
+
+  startup     Startup  @relation(fields: [startupId], references: [id])
+  adminUser   User     @relation("AdminNotesByUser", fields: [adminUserId], references: [id])
+
+  @@index([startupId])
+  @@map("admin_notes")
+}
+
+model Consent {
+  id             String   @id @default(uuid())
+  userId         String
+  consentType    String
+  consentVersion String
+  acceptedAt     DateTime @default(now())
+  ipAddress      String?
+  userAgent      String?
+
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("consents")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  action       String
+  entityType   String
+  entityId     String?
+  metadataJson Json?
+  createdAt    DateTime @default(now())
+
+  user         User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+

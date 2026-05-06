@@ -1,0 +1,22 @@
+node_modules
+.next
+dist
+build
+coverage
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+Thumbs.db
+.editorconfig
+        .gitignore
+        apps/
+        docs/
+        infra/
+        package.json
+        packages/
+        pnpm-lock.yaml
+        pnpm-workspace.yaml
+        tsconfig.base.json

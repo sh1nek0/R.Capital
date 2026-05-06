@@ -1,0 +1,19 @@
+{
+  "name": "capital-os-navigator",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @capital-os/web --filter @capital-os/api dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @capital-os/api prisma:generate",
+    "db:push": "pnpm --filter @capital-os/api prisma:push",
+    "db:migrate": "pnpm --filter @capital-os/api prisma:migrate",
+    "db:studio": "pnpm --filter @capital-os/api prisma:studio"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
